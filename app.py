@@ -1,6 +1,6 @@
 import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
+import altair as alt
 
 st.set_page_config(page_title="متى يصل طلبي؟", page_icon="🛵")
 
@@ -46,15 +46,21 @@ def estimate_delivery_time(weather, traffic, distance_range, min_orders=30):
 
 
 def draw_bar(values, title, xlabel):
-    # رسم أعمدة لمتوسط وقت التوصيل، مع كتابة القيمة فوق كل عمود
-    fig, ax = plt.subplots(figsize=(7, 4))
-    ax.bar(values.index.astype(str), values.values)
-    ax.set_title(title)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel("Average delivery time (min)")
-    for i, v in enumerate(values.values):
-        ax.text(i, v + 0.3, str(v), ha="center")
-    st.pyplot(fig)
+    # رسم أعمدة تفاعلية (تظهر القيمة لما تمرّين الماوس على العمود)
+    data = values.reset_index()
+    data.columns = ["group", "avg"]
+    data["group"] = data["group"].astype(str)
+    chart = (
+        alt.Chart(data)
+        .mark_bar()
+        .encode(
+            x=alt.X("group:N", sort=None, title=xlabel),
+            y=alt.Y("avg:Q", title="Average delivery time (min)"),
+            tooltip=["group", "avg"],
+        )
+        .properties(title=title)
+    )
+    st.altair_chart(chart, use_container_width=True)
 
 
 def highest_lowest(values):
