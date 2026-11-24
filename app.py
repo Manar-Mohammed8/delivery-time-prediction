@@ -1,14 +1,10 @@
 import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="متى يصل طلبي؟", page_icon="🛵")
 
-st.markdown(
-    "<style>.block-container, [data-testid='stSidebar'] "
-    "{direction: rtl; text-align: right;}</style>",
-    unsafe_allow_html=True,
-)
+st.markdown("<style>.block-container {direction: rtl; text-align: right;}</style>",
+            unsafe_allow_html=True)
 
 
 @st.cache_data
@@ -45,26 +41,6 @@ def estimate_delivery_time(weather, traffic, distance_range, min_orders=30):
     }
 
 
-def draw_bar(values, title, xlabel):
-    # رسم أعمدة لمتوسط وقت التوصيل، مع كتابة القيمة فوق كل عمود
-    fig, ax = plt.subplots(figsize=(7, 4))
-    ax.bar(values.index.astype(str), values.values)
-    ax.set_title(title)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel("Average delivery time (min)")
-    for i, v in enumerate(values.values):
-        ax.text(i, v + 0.3, str(v), ha="center")
-    st.pyplot(fig)
-
-
-def highest_lowest(values):
-    # جملة تلخص أعلى وأقل متوسط في الرسمة (إذا فيه أكثر من عمود)
-    if len(values) >= 2:
-        st.write(f"الأعلى: {values.idxmax()} ({values.max()} دقيقة)، "
-                 f"والأقل: {values.idxmin()} ({values.min()} دقيقة).")
-
-
-# ---------- تقدير وقت الوصول ----------
 st.title("🛵 متى يصل طلبي؟")
 st.write("اختر ظروف التوصيل، وبنقدّر لك وقت الوصول من طلبات مشابهة سابقة.")
 
@@ -81,75 +57,3 @@ if st.button("قدّر وقت الوصول"):
     else:
         st.success(f"غالباً يصل طلبك خلال {result['low']:.0f} إلى {result['high']:.0f} دقيقة")
         st.caption(f"المتوسط {result['average']} دقيقة، مبني على {result['orders']} طلب مشابه")
-
-# ---------- فلاتر الاكتشافات ----------
-st.sidebar.header("فلاتر الاكتشافات")
-st.sidebar.caption("تؤثر على قسم الاكتشافات فقط، وما تؤثر على تقدير وقت الوصول.")
-
-weather_pick = st.sidebar.multiselect("حالة الطقس", list(WEATHER.keys()),
-                                      default=list(WEATHER.keys()))
-traffic_pick = st.sidebar.multiselect("الازدحام المروري", list(TRAFFIC.keys()),
-                                      default=list(TRAFFIC.keys()))
-distance_pick = st.sidebar.multiselect("المسافة", list(DISTANCE.keys()),
-                                       default=list(DISTANCE.keys()))
-
-# نطبق الفلتر فقط إذا المستخدم قلّل الخيارات، عشان الوضع الافتراضي يعرض كل الطلبات
-fdf = df
-if len(weather_pick) < len(WEATHER):
-    fdf = fdf[fdf["Weatherconditions"].isin([WEATHER[w] for w in weather_pick])]
-if len(traffic_pick) < len(TRAFFIC):
-    fdf = fdf[fdf["Road_traffic_density"].isin([TRAFFIC[t] for t in traffic_pick])]
-if len(distance_pick) < len(DISTANCE):
-    in_range = pd.Series(False, index=fdf.index)
-    for label in distance_pick:
-        low_km, high_km = DISTANCE[label]
-        in_range = in_range | ((fdf["Distance_km"] > low_km) & (fdf["Distance_km"] <= high_km))
-    fdf = fdf[in_range]
-
-# ---------- الاكتشافات ----------
-st.divider()
-st.header("الاكتشافات من البيانات")
-
-if fdf.empty:
-    st.warning("ما فيه طلبات تطابق هذي الفلاتر، جرّب تختار خيارات أكثر.")
-    st.stop()
-
-st.caption(f"متوسط وقت التوصيل (دقيقة) حسب كل عامل، من {len(fdf):,} طلب.")
-
-col1, col2, col3 = st.columns(3)
-col1.metric("عدد الطلبات", f"{len(fdf):,}")
-col2.metric("متوسط وقت التوصيل", f"{fdf['Time_taken(min)'].mean():.1f} دقيقة")
-col3.metric("أبطأ طلب", f"{fdf['Time_taken(min)'].max()} دقيقة")
-
-traffic_order = ["Low", "Medium", "High", "Jam"]
-traffic_avg = (fdf[fdf["Road_traffic_density"].isin(traffic_order)]
-               .groupby("Road_traffic_density")["Time_taken(min)"]
-               .mean().reindex(traffic_order).dropna().round(1))
-draw_bar(traffic_avg, "Average delivery time by traffic density", "Traffic density")
-highest_lowest(traffic_avg)
-
-weather_order = ["Sunny", "Windy", "Cloudy", "Fog", "Stormy", "Sandstorms"]
-weather_avg = (fdf[fdf["Weatherconditions"].isin(weather_order)]
-               .groupby("Weatherconditions")["Time_taken(min)"]
-               .mean().reindex(weather_order).dropna().round(1))
-draw_bar(weather_avg, "Average delivery time by weather condition", "Weather condition")
-highest_lowest(weather_avg)
-
-dist_bins = [0, 5, 10, 15, 100]
-dist_labels = ["<5 km", "5-10 km", "10-15 km", ">15 km"]
-dist_group = pd.cut(fdf["Distance_km"], bins=dist_bins, labels=dist_labels)
-dist_avg = fdf.groupby(dist_group, observed=True)["Time_taken(min)"].mean().round(1)
-draw_bar(dist_avg, "Average delivery time by distance", "Distance group")
-highest_lowest(dist_avg)
-
-# ---------- الخلاصة (على كل البيانات، ما تتأثر بالفلاتر) ----------
-st.divider()
-st.header("الخلاصة والتوصيات")
-st.caption("الأرقام هنا من كل البيانات (45,593 طلب)، وما تتغير بالفلاتر.")
-st.markdown("""
-| الاكتشاف | الرقم | التوصية للعميل |
-| :--- | :--- | :--- |
-| الزحمة ترفع وقت التوصيل | من 21.3 دقيقة (Low) إلى 31.2 دقيقة (Jam)، والفرق 9.9 دقيقة | إذا صار فيه زحمة شديدة (Jam) الأفضل التطبيق يطلع وقت متوقع أطول للعميل، مع تنبيه أن الزحمة ممكن تسبب تأخير قريب من 10 دقائق مقارنة بالزحمة الخفيفة |
-| الجو غير المشمس يبطئ التوصيل | من 21.9 دقيقة (Sunny) إلى 28.9 دقيقة (Cloudy و Fog)، والفرق 7.0 دقائق | الأفضل ندخل حالة الطقس في حساب الوقت المتوقع، ونزود التقدير عدة دقائق في Cloudy و Fog بدل ما نستخدم نفس تقدير الجو المشمس |
-| المسافة تزيد الوقت لحد فئة 10 إلى 15 كم تقريباً | من 22.2 دقيقة (أقل من 5 كم) إلى 29.8 دقيقة (من 10 إلى 15 كم)، وبعدين يثبت تقريباً (29.9 لأكثر من 15 كم) | لازم الأداة تعتمد على المسافة في حساب وقت التوصيل، بس لا نفترض زيادة كبيرة بعد 15 كم لأن المتوسط ثبت تقريباً بعد هذي النقطة |
-""")
