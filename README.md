@@ -53,7 +53,7 @@
 - `requirements.txt` — المكتبات
 - `data/raw.csv` — الداتا الأصلية
 - `data/clean.csv` — الداتا بعد التنظيف
-
+- `data/model_ready.csv` — الداتا الجاهزة للنموذج (للبونص)
 ## تشغيل المشروع محلياً
 ```bash
 pip install -r requirements.txt
