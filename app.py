@@ -45,7 +45,8 @@ def estimate_delivery_time(weather, traffic, distance_range, min_orders=30):
     }
 
 
-x=alt.X("group:N", sort=None, title=xlabel, axis=alt.Axis(labelAngle=0)),    # رسم أعمدة تفاعلية (تظهر القيمة لما تمرّين الماوس على العمود)
+def draw_bar(values, title, xlabel):
+    # رسم أعمدة تفاعلية (تظهر القيمة لما تمرّين الماوس على العمود)
     data = values.reset_index()
     data.columns = ["group", "avg"]
     data["group"] = data["group"].astype(str)
@@ -53,7 +54,7 @@ x=alt.X("group:N", sort=None, title=xlabel, axis=alt.Axis(labelAngle=0)),    # �
         alt.Chart(data)
         .mark_bar()
         .encode(
-            x=alt.X("group:N", sort=None, title=xlabel),
+            x=alt.X("group:N", sort=None, title=xlabel, axis=alt.Axis(labelAngle=0)),
             y=alt.Y("avg:Q", title="Average delivery time (min)"),
             tooltip=["group", "avg"],
         )
