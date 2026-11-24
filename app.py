@@ -143,7 +143,7 @@ draw_bar(weather_avg, "Average delivery time by weather condition", "Weather con
 highest_lowest(weather_avg)
 
 dist_bins = [0, 5, 10, 15, 100]
-dist_labels = ["<5 km", "5-10 km", "10-15 km", ">15 km"]
+dist_labels = ["\u200e<5 km\u200e", "\u200e5-10 km\u200e", "\u200e10-15 km\u200e", "\u200e>15 km\u200e"]
 dist_group = pd.cut(fdf["Distance_km"], bins=dist_bins, labels=dist_labels)
 dist_avg = fdf.groupby(dist_group, observed=True)["Time_taken(min)"].mean().round(1)
 draw_bar(dist_avg, "Average delivery time by distance", "Distance group")
