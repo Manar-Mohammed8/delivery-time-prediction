@@ -5,8 +5,11 @@ import altair as alt
 st.set_page_config(page_title="متى يصل طلبي؟", page_icon="🛵")
 
 st.markdown(
-    "<style>.block-container, [data-testid='stSidebar'] "
-    "{direction: rtl; text-align: right;}</style>",
+    "<style>"
+    ".block-container, [data-testid='stSidebar'] {direction: rtl; text-align: right;}"
+    "[data-testid='stMarkdownContainer'], [data-testid='stCaptionContainer'], "
+    "[data-testid='stHeading'], h1, h2, h3 {direction: rtl; text-align: right;}"
+    "</style>",
     unsafe_allow_html=True,
 )
 
